@@ -30,8 +30,8 @@ class Solution:
     def __init__(self, numDims, perf):
         self.numDimensions = numDims
         self.performance = perf
-        self.fitness = 0
-        print("inside solution constructor")
+        self.fitness = None
+        #print("inside solution constructor")
         # child class should fill in fitness using given performance function
 
     def mutate(self):
@@ -49,6 +49,7 @@ class ToyDomainSolution(Solution):
         self.vals = None
         self.generate()
         self.fitness = self.performance(self.vals)
+
         #print("inside toy domain constructor")
 
     def mutate(self):
@@ -105,11 +106,12 @@ def findMapElites(solsMap, perfMap, numIterations, numInitial, solType, solTemp)
         if (i < numInitial):
             newSol = solType(solTemp.numDimensions, solTemp.performance)
         else:
-            randomSol, randDesc = random.choice(list(solsMap.items()))
+            randomDesc, randomSol = random.choice(list(solsMap.items()))
             newSol = randomSol.mutate()
         
         newBehavior = newSol.behavior()
         newPerformance = newSol.fitness
+        #print("fitness = ", newSol.fitness)
         
         if newBehavior not in solsMap.keys() or perfMap[newBehavior] < newPerformance:
             perfMap[newBehavior] = newPerformance
