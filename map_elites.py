@@ -21,6 +21,8 @@
 
 from re import I
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
 import random
 
 class Solution:
@@ -64,7 +66,8 @@ class ToyDomainSolution(Solution):
     def generate(self):
         # fill in n-dimensional array with random values
         #   (choosing range of random values to be [-5.12, 5.12])
-        self.vals = 5.12 * np.random.random_sample(size = self.numDimensions) - 5.12
+        #self.vals = 5.12 * np.random.random_sample(size = self.numDimensions) - 5.12
+        self.vals = 10.24 * np.random.random_sample(size = self.numDimensions) - 5.12
 
 
     def behavior(self):
@@ -102,6 +105,7 @@ class ToyDomainSolution(Solution):
 
 def findMapElites(solsMap, perfMap, numIterations, numInitial, solType, solTemp):
 
+    count = 0
     for i in range(numIterations):
         if (i < numInitial):
             newSol = solType(solTemp.numDimensions, solTemp.performance)
@@ -116,9 +120,31 @@ def findMapElites(solsMap, perfMap, numIterations, numInitial, solType, solTemp)
         if newBehavior not in solsMap.keys() or perfMap[newBehavior] < newPerformance:
             perfMap[newBehavior] = newPerformance
             solsMap[newBehavior] = newSol
-
         
+        if i % 1600 == 0:
+            generateHeapMap(perfMap, count)
+            count += 1
+#             print("new")
+#         else:
+#             print("exists")
 
-        
-        
+def generateHeapMap(performanceMap, count):
+    perfs = list(performanceMap.values())
 
+    behaviors = performanceMap.keys()
+    behaviorACoord = [i[0] for i in behaviors]
+    behaviorBCoord = [i[1] for i in behaviors]
+
+
+
+    df = pd.DataFrame({'x': behaviorACoord, 'y' : behaviorBCoord, 'z' : perfs})
+
+    sc = plt.scatter(df.x, df.y, 0.1, c=df.z, cmap='plasma_r')
+    if count == 0:
+        plt.colorbar(sc)
+    filename = 'heatmap' + chr(count+65) + '.png'
+    plt.savefig(filename)
+
+
+    print(len(perfs))
+    print(chr(count+65) +"done")

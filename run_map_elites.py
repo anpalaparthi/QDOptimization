@@ -1,8 +1,9 @@
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+import pandas as pd
 import math
-from map_elites import  ToyDomainSolution, Solution, findMapElites
+from map_elites import  ToyDomainSolution, Solution, findMapElites, generateHeapMap
 
 # def sphere - sphere objective function
 # def rastrigin - 2nd objective function
@@ -24,44 +25,12 @@ def rastrigin(nDimVector):
 
 numDims = 20
 # numIterations = 2500000
-numIterations = 250
+numIterations = 40000
 numInitial = 10
 solutionTemplate = ToyDomainSolution(numDims, sphere)
 solutionsMap = {}
 performanceMap = {}
 
 findMapElites(solutionsMap, performanceMap, numIterations, numInitial, ToyDomainSolution, solutionTemplate)
-perfs = list(performanceMap.values())
-#print("perfs:")
-#print(perfs)
-
-behaviors = performanceMap.keys()
-#print("Behaviors")
-#print(behaviors)
-behaviorACoord = [i[0] for i in behaviors]
-behaviorBCoord = [i[1] for i in behaviors]
-
-#print("a coords")
-#print(behaviorACoord)
-#print("b coords")
-#print(behaviorBCoord)
-
-
-#numpyArray = np.array((behaviorACoord, behaviorBCoord, perfs), dtype=object)
-#resultArray = np.transpose(numpyArray)
-
-arrOfData = [behaviorACoord, behaviorBCoord, perfs]
-resultArray = np.array([np.array(xi) for xi in arrOfData]).transpose()
-
-
-#print("result array")
-#print(resultArray)
-#print ("perfs size = ", len(perfs))
-#print ("a size = ", len(behaviorACoord))
-#print ("b size = ", len(behaviorBCoord))
-
-sns.heatmap(resultArray)
-plt.show()
-
-print("done")
-
+generateHeapMap(performanceMap, -1)
+print('all done')
