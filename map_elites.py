@@ -22,6 +22,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
+import seaborn as sns
 
 # abstract Solution class to define how any solution type should
 #   be given to the map-elites algorithm
@@ -31,13 +32,13 @@ class Solution:
         raise Exception("Solution child class needs to be defined")
 
     #save the number of dimensions of each solutions and the performance function to be used
-    def __init__(self, numDims, perf):
-        self.numDimensions = numDims
+    def __init__(self, num_dims, perf):
+        self.num_dimensions = num_dims
         self.performance = perf
         self.fitness = None
         # child class should fill in fitness using given performance function
 
-    def mutate(self):
+    def mutate(self, sigma):
         raise Exception("Solution child class mutate() needs to be defined")
 
     def generate(self):
@@ -46,12 +47,18 @@ class Solution:
     def behavior(self):
         raise Exception("Solution child class behavior() needs to be defined")
 
+    @classmethod
+    def find_map_elites(self, sols_map, perf_map, num_iters, num_initial, mutation_power):
+        raise Exception("Solution child class find_map_elites() needs to be defined")
+       
+
+    
 #Solution object to use
 class ToyDomainSolution(Solution):
 
     #Constructor for ToyDomain object with given dimensions and performance function
-    def __init__(self, numDims, perf):
-        super().__init__(numDims, perf)
+    def __init__(self, num_dims, perf):
+        super().__init__(num_dims, perf)
         self.vals = None
 
         # generate random values n random values for the n-dimensional object, and calculate fitness 
@@ -60,32 +67,32 @@ class ToyDomainSolution(Solution):
 
 
     # use Gaussian noise to generate randomly new solution based on this one
-    def mutate(self):
-        noise = np.random.normal(loc=0, scale=0.5, size=self.numDimensions)
+    def mutate(self, sigma):
+        noise = np.random.normal(loc=0, scale=sigma, size=self.num_dimensions)
 
-        mutatedSolution = ToyDomainSolution(self.numDimensions, self.performance)
-        mutatedSolution.vals = (self.vals + noise)
-        return mutatedSolution
+        mutated_solution = ToyDomainSolution(self.num_dimensions, self.performance)
+        mutated_solution.vals = (self.vals + noise)
+        return mutated_solution
 
 
     # fill in n-dimensional array with random values
     #   (choosing range of random values to be [-5.12, 5.12])
     def generate(self):
-        self.vals = 10.24 * np.random.random_sample(size = self.numDimensions) - 5.12
+        self.vals = np.random.uniform(low = -5.12, high = 5.12, size = self.num_dimensions)
 
     # return lower dimension description of this solution
     #   (sum of first n/2 components, sum of second n/2 components)
     def behavior(self):
 
-        sumLower = 0
-        sumUpper = 0
+        sum_lower = 0
+        sum_upper = 0
         for i in range(len(self.vals)):
             if i < (len(self.vals) / 2):
-                sumLower += self.clipVal(self.vals[i])
+                sum_lower += self.clip_val(self.vals[i])
             else:
-                sumUpper += self.clipVal(self.vals[i])
+                sum_upper += self.clip_val(self.vals[i])
 
-        return sumLower, sumUpper
+        return sum_lower, sum_upper
 
     # clip all the values in an array
     # def clip(self, arr):
@@ -96,82 +103,137 @@ class ToyDomainSolution(Solution):
     #     return arr
 
     # clip function to restrict values to [-5.12, 5.12] range
-    def clipVal(self, num):
+    def clip_val(self, num):
         if num < -5.12 or num > 5.12:
                 return 5.12 / num
         return num
+    
+    # function to run map-elites algorithm
+    @classmethod
+    def find_map_elites(self, sols_archive, num_iters, num_initial, mutation_power, num_dimensions, performance):
 
-# function to run map-elites algorithm
-def findMapElites(solsMap, perfMap, numIterations, numInitial, solType, solTemp):
+        #variable for printing heatmaps to file
+        count = 0
 
-    #variable for printing heatmaps to file
-    count = 0
-
-    # generate numIterations number of solutions
-    for i in range(numIterations):
-        
-        #initialize maps w/ numInitial random solutions
-        if (i < numInitial):
-            newSol = solType(solTemp.numDimensions, solTemp.performance)
-        else:
-
-            #for remaining solutions, generate new solution by mutating an existing solution 
-            randomDesc, randomSol = random.choice(list(solsMap.items()))
-            newSol = randomSol.mutate()
-        
-        # find the new behavior and fitness of the generated solution
-        newBehavior = newSol.behavior()
-        newPerformance = newSol.fitness
-
-        #update the maps with this is a new/better solution
-        oldPerf = perfMap.get(newBehavior)
-        if oldPerf == None or oldPerf > newPerformance:
+        # generate num_iters number of solutions
+        for i in range(num_iters):
             
-            perfMap[newBehavior] = newPerformance
-            solsMap[newBehavior] = newSol
-        
-        # generate 25 heatmaps intermittently over the course of map-elites algorithm 
-        if i % (numIterations // 5) == 0:
-            generateHeapMap(perfMap, count)
-            count += 1
+            #initialize maps w/ num_initial random solutions
+            if (i < num_initial):
+                new_sol = ToyDomainSolution(num_dimensions, performance)
+            else:
 
-# helper function to create and update heat & save to file
-def generateHeapMap(performanceMap, count):
+                #for remaining solutions, generate new solution by mutating an existing solution 
+                #random_desc, random_sol = random.choice(list(sols_map.items()))
+                random_sol = sols_archive.random_solution()
+                new_sol = random_sol.mutate(mutation_power)
+            
+            sols_archive.add_solution(new_sol)
+            
+            # generate 25 heatmaps intermittently over the course of map-elites algorithm 
+            if i % (num_iters // 5) == 0:
+                #self.generate_heatmap(perf_map, count)
+                sols_archive.generate_heatmap(count)
+                count += 1
+
     
-    # separate the performance map into three lists for x/y axis and z values (aka performance/heat)
-    behaviorACoord = []
-    behaviorBCoord = []
-    perfs = []
-    for k, v in performanceMap.items():
-        perfs.append(v)
-        behaviorACoord.append(k[0])
-        behaviorBCoord.append(k[1])
+
+class SolutionArchive:
+
+    # attributes:
+    #   -solutions map
+    #   -performance map
+
+    # functions:
+    #   - addSolution()
+    #   - randomSolution()
+    #   - generateHeatmap()
+    #   - findIndex() --> get index (a tuple of 2 floats) of which cell this index lies in 
+
+    # more possible functions
+    #   - removeSolution()
+    #   - findSolution() --> return None if DNE
+
+    # initialize empty dicts for solutions map (map behavior->solution)
+    #   and for performance map (map behavior->performance)
+    def __init__(self, res):
+        self.sols_map = {}
+        self.perf_map = {}
+        self.archive_res = res
         
-
-    # format data into a pandas data frame
-    df = pd.DataFrame({'x': behaviorACoord, 'y' : behaviorBCoord, 'z' : perfs})
-    df = df.sort_values(by=['x'])
+        max = 250
+        min = -250
+        # using max/min values as -250 to 250 static values
+        print("res = ", self.archive_res)
+        self.interval = (max-min) / self.archive_res
+        print("interval = ", self.interval)
     
-    # plot scatter plot with performances as color values
-    sc = plt.scatter(df.x, df.y, 0.1, c=df.z, cmap='plasma_r')
-    if count == 0:
-        plt.colorbar(sc)
+    def add_solution(self, solution):
+        # find the new behavior and fitness of the generated solution
+        #sol_behavior = solution.behavior()
+        sol_idx = self.findIndex(solution)
+        sol_performance = solution.fitness
+        
+        #update the maps with this is a new/better solution
+        old_perf = self.perf_map.get(sol_idx)
+        if old_perf == None or old_perf > sol_performance:
+            
+            self.perf_map[sol_idx] = sol_performance
+            self.sols_map[sol_idx] = solution
+        
+    def findIndex(self, solution):
+        #using max/min values as -250 to 250 static values
+        sol_behaviorA, sol_behaviorB = solution.behavior()
+        sol_behaviorA = sol_behaviorA // self.interval
+        sol_behaviorB = sol_behaviorB // self.interval
+        
+        return sol_behaviorA * self.interval, sol_behaviorB * self.interval
+    
+    def random_solution(self):
+        random_desc, random_sol = random.choice(list(self.sols_map.items()))
+        return random_sol
+    
+    # helper function to create and update heat & save to file
+    def generate_heatmap(self, count):
+        
+        # separate the performance map into three lists for x/y axis and z values (aka performance/heat)
+        behaviorA_coord = []
+        behaviorB_coord = []
+        perfs = []
+        for k, v in self.perf_map.items():
+            perfs.append(v)
+            behaviorA_coord.append(k[0])
+            behaviorB_coord.append(k[1])
+        
+        # format data into a pandas data frame
+        df = pd.DataFrame({'x': behaviorA_coord, 'y' : behaviorB_coord, 'z' : perfs})
+        df = df.sort_values(by=['x'])
+        df = df.pivot(index = 'x', columns = 'y', values='z')
+        
+#         # plot scatter plot with performances as color values
+#         sc = plt.scatter(df.x, df.y, 1.5, c=df.z, cmap='plasma_r')
+        showbar = False
+        if count == 0:
+            showbar = True
 
-    #save heatmap to file (first will be labelled A, second B, etc)
-    filename = 'heatmap' + chr(count+65) + '.png'
-    plt.savefig(filename)
+        ax = sns.heatmap(df, cbar = showbar, cmap='plasma_r')
+    
+        #save heatmap to file (first will be labelled A, second B, etc)
+        filename = 'heatmap' + chr(count+65) + '.png'
+        plt.savefig(filename)
 
-    #print current update to terminal (number of cells printed and which file generated)
-    print(len(perfs))
-    print(chr(count+65) +"done")
+        #print current update to terminal (number of cells printed and which file generated)
+        print(len(perfs))
+        print(chr(count+65) +"done")
+
 
 
 
 
 
 # Pseudocode for map-elites algorithm from paper
-# void findMapElites(): run map-elites algorithm and update maps accordingly
-# findMapElites(solutions map, performance map, # iterations,
+# void find_map_elites(): run map-elites algorithm and update maps accordingly
+# find_map_elites(solutions map, performance map, # iterations,
 #                   # initialElites, defaultSolution (to give perf, numdims, etc))
 # for iter 1 -> I:
 #     if iter < G:
