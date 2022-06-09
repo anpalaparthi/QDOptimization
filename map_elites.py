@@ -1,22 +1,3 @@
-# class ToyDomainSolution (extends Solution abstract class if need to support dif types of solutions)
-#   Attributes:
-#   - n-dimensional array to store config of solution
-#   - n = # of dimensions
-#   - fitness = output of performance function
-#   - performance() = function used to calculate fitness
-#   
-#   Functions:
-#   - generate() - create random solution
-#       -- randomly generate n numbers and store in n-dimensional array
-#   - behavior() 
-#       -- return the lower-dimension behavior description
-#   - constructor(performance()) 
-#       -- generate random solution, use given performance function for run()
-
-
-
-# genHeatMap(solutions map, performance map)
-
 from re import I
 import numpy as np
 import pandas as pd
@@ -72,6 +53,7 @@ class ToyDomainSolution(Solution):
 
         mutated_solution = ToyDomainSolution(self.num_dimensions, self.performance)
         mutated_solution.vals = (self.vals + noise)
+        mutated_solution.fitness = mutated_solution.performance(mutated_solution.vals)
         return mutated_solution
 
 
@@ -110,26 +92,33 @@ class ToyDomainSolution(Solution):
     
     # function to run map-elites algorithm
     @classmethod
-    def find_map_elites(self, sols_archive, num_iters, num_initial, mutation_power, num_dimensions, performance):
+    def find_map_elites(self, sols_archive, num_iters, num_initial, mutation_power, num_dimensions, performance, batch_size):
 
         #variable for printing heatmaps to file
         count = 0
 
+        #initialize maps w/ num_initial random solutions
+        for i in range (num_initial):
+            new_sol = ToyDomainSolution(num_dimensions, performance)
+            sols_archive.add_solution(new_sol)            
+        
         # generate num_iters number of solutions
         for i in range(num_iters):
-            
-            #initialize maps w/ num_initial random solutions
-            if (i < num_initial):
-                new_sol = ToyDomainSolution(num_dimensions, performance)
-            else:
 
-                #for remaining solutions, generate new solution by mutating an existing solution 
-                #random_desc, random_sol = random.choice(list(sols_map.items()))
-                random_sol = sols_archive.random_solution()
+            random_sol = sols_archive.random_solution()
+            print("beginning batch")
+            for _ in range(batch_size):
                 new_sol = random_sol.mutate(mutation_power)
+                sols_archive.add_solution(new_sol)
+            print("batch complete")
             
+            #for remaining solutions, generate new solution by mutating an existing solution 
+            #random_desc, random_sol = random.choice(list(sols_map.items()))
+#             random_sol = sols_archive.random_solution()
+#             new_sol = random_sol.mutate(mutation_power)
+
             sols_archive.add_solution(new_sol)
-            
+
             # generate 25 heatmaps intermittently over the course of map-elites algorithm 
             if i % (num_iters // 5) == 0:
                 #self.generate_heatmap(perf_map, count)
@@ -161,11 +150,11 @@ class SolutionArchive:
         self.perf_map = {}
         self.archive_res = res
         
-        max = 250
-        min = -250
+        coord_max = 5.12*20
+        coord_min = -5.12*20
         # using max/min values as -250 to 250 static values
         print("res = ", self.archive_res)
-        self.interval = (max-min) / self.archive_res
+        self.interval = (coord_max-coord_min) / self.archive_res
         print("interval = ", self.interval)
     
     def add_solution(self, solution):
@@ -217,6 +206,7 @@ class SolutionArchive:
             showbar = True
 
         ax = sns.heatmap(df, cbar = showbar, cmap='plasma_r')
+        ax.invert_yaxis()
     
         #save heatmap to file (first will be labelled A, second B, etc)
         filename = 'heatmap' + chr(count+65) + '.png'

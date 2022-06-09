@@ -1,4 +1,3 @@
-
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -15,7 +14,11 @@ from map_elites import  ToyDomainSolution, Solution, SolutionArchive
 def sphere(ndim_vector):
     sum = 0
     for num in np.nditer(ndim_vector):  
-            sum += (num * num) 
+            x = num
+            if (x < -5.12 or x > 5.12):
+                x = 5.12 / x
+            sum += (x-2.048) * (x-2.048) 
+#             sum += x * x 
     return sum
 
 # rastrigin objective function
@@ -31,12 +34,13 @@ def rastrigin(ndim_vector):
 num_dims = 20
 # actual number of iterations for experiment - 2.5 million
 # num_iterations = 2500000
-num_iterations = 100000
+num_iterations = 1000
 num_initial = 100
 mutation_power = 0.5
 # solutions_map = {}
 # performance_map = {}
-archive_res = 512
+archive_res = 128
+pop_size = 540
 solutions_archive = SolutionArchive(archive_res)
 
 
@@ -47,7 +51,7 @@ now = datetime.now()
 current_time = now.strftime("%H:%M:%S")
 print("Current Time =", current_time)
 
-ToyDomainSolution.find_map_elites(solutions_archive, num_iterations, num_initial, mutation_power, num_dims, sphere)
+ToyDomainSolution.find_map_elites(solutions_archive, num_iterations, num_initial, mutation_power, num_dims, sphere, pop_size)
 solutions_archive.generate_heatmap(-1)
 print('all done')
 
