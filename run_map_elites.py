@@ -39,7 +39,8 @@ num_initial = 100
 mutation_power = 0.5
 # solutions_map = {}
 # performance_map = {}
-archive_res = 128
+archive_res = 500
+# archive_res = 128
 pop_size = 540
 solutions_archive = SolutionArchive(archive_res)
 
@@ -54,6 +55,13 @@ print("Current Time =", current_time)
 ToyDomainSolution.find_map_elites(solutions_archive, num_iterations, num_initial, mutation_power, num_dims, sphere, pop_size)
 solutions_archive.generate_heatmap(-1)
 print('all done')
+
+print('qd score: ')
+print(solutions_archive.qd_score())
+
+print('% cells occupied: ')
+print(solutions_archive.cells_occupied() , '%')
+
 
 print("End time:")
 now = datetime.now()

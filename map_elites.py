@@ -150,9 +150,11 @@ class SolutionArchive:
         self.perf_map = {}
         self.archive_res = res
         
-        coord_max = 5.12*20
-        coord_min = -5.12*20
+#         coord_max = 5.12*20
+#         coord_min = -5.12*20
         # using max/min values as -250 to 250 static values
+        coord_max = 250
+        coord_min = -250
         print("res = ", self.archive_res)
         self.interval = (coord_max-coord_min) / self.archive_res
         print("interval = ", self.interval)
@@ -160,7 +162,7 @@ class SolutionArchive:
     def add_solution(self, solution):
         # find the new behavior and fitness of the generated solution
         #sol_behavior = solution.behavior()
-        sol_idx = self.findIndex(solution)
+        sol_idx = self.find_index(solution)
         sol_performance = solution.fitness
         
         #update the maps with this is a new/better solution
@@ -170,13 +172,25 @@ class SolutionArchive:
             self.perf_map[sol_idx] = sol_performance
             self.sols_map[sol_idx] = solution
         
-    def findIndex(self, solution):
+    def find_index(self, solution):
         #using max/min values as -250 to 250 static values
         sol_behaviorA, sol_behaviorB = solution.behavior()
         sol_behaviorA = sol_behaviorA // self.interval
         sol_behaviorB = sol_behaviorB // self.interval
         
         return sol_behaviorA * self.interval, sol_behaviorB * self.interval
+    
+    def qd_score(self):
+        perf_sum = 0;
+        for value in self.perf_map.values():
+            perf_sum += value
+        return perf_sum
+    
+    def cells_occupied(self):
+        num_cells = len(self.sols_map)
+        num_total = self.archive_res * self.archive_res
+        return (num_cells / num_total) * 100
+        
     
     def random_solution(self):
         random_desc, random_sol = random.choice(list(self.sols_map.items()))
